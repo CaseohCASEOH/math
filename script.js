@@ -107,10 +107,6 @@
             currentanswers = 0;
             totalquizs = quiz.length;
             document.querySelector('.headerr').innerHTML = quiz[currentquiz].question;
-            {
-            if (soundd) {
-                document.getElementById('clicksound').play();
-            }
         }
 
         function toggle2() {
@@ -134,10 +130,6 @@
             currentanswers = 0;
             totalquizs = quiz.length;
             document.querySelector('.headerr').innerHTML = quiz[currentquiz].question;
-            {
-            if (soundd) {
-                document.getElementById('clicksound').play();
-            }
         }
 
         function toggle3() {
@@ -161,10 +153,6 @@
             currentanswers = 0;
             totalquizs = quiz.length;
             document.querySelector('.headerr').innerHTML = quiz[currentquiz].question;
-            {
-            if (soundd) {
-                document.getElementById('clicksound').play();
-            }
         }
 
         function toggle4() {
