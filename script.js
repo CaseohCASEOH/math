@@ -107,7 +107,7 @@
             currentanswers = 0;
             totalquizs = quiz.length;
             document.querySelector('.headerr').innerHTML = quiz[currentquiz].question;
-                
+            {
             if (soundd) {
                 document.getElementById('clicksound').play();
             }
@@ -134,7 +134,7 @@
             currentanswers = 0;
             totalquizs = quiz.length;
             document.querySelector('.headerr').innerHTML = quiz[currentquiz].question;
-                
+            {
             if (soundd) {
                 document.getElementById('clicksound').play();
             }
@@ -161,7 +161,7 @@
             currentanswers = 0;
             totalquizs = quiz.length;
             document.querySelector('.headerr').innerHTML = quiz[currentquiz].question;
-                
+            {
             if (soundd) {
                 document.getElementById('clicksound').play();
             }
