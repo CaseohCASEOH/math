@@ -1,3 +1,19 @@
+sound1.addEventListener('ended', nextsong);
+sound2.addEventListener('ended', nextsong);
+
+function songsssss() {
+  if (songsss) {
+    sound1.pause();
+    sound2.pause();
+    songsss = false;
+  } else {
+    songg.play();
+    songsss = true;
+  }
+}
+
+sound1.play();
+
         let soundd = true;
 
         document.querySelector('.settings').addEventListener('click', function() {
@@ -226,11 +242,17 @@
                 toggleeeeeeee.classList.remove('active');
                 toggleeeeeeee.style.transform = 'translateX(0)';
                 soundd = true;
+                songsss = true;
+                songg.play
+
             } else {
                 toggleeeeeeee.classList.add('active');
                 toggleeeeeeee.style.transition = 'transform 0.5s ease';
                 toggleeeeeeee.style.transform = 'translateX(-50px)';
                 soundd = false;
+                songsss = false;
+                sound1.pause();
+                sound2.pause();
             }
             if (soundd) {
                 document.getElementById('clicksound').play();
