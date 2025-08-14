@@ -2,59 +2,57 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Strong Roblox Lua Obfuscator</title>
+<title>Lua Obfuscator</title>
 <style>
-body { font-family: sans-serif; background:#1e1e1e; color:#ddd; display:flex; flex-direction:column; align-items:center; padding:2em; }
+body { font-family:sans-serif; background:#1e1e1e; color:#ddd; display:flex; flex-direction:column; align-items:center; padding:2em; }
 textarea { width:80%; height:150px; margin-bottom:1em; background:#2e2e2e; color:#fff; border:none; padding:0.5em; resize:none; }
 button { padding:0.5em 1em; margin:0.5em; cursor:pointer; }
 #output { width:80%; height:200px; background:#111; color:#0f0; padding:0.5em; overflow:auto; white-space:pre-wrap; }
 </style>
 </head>
 <body>
-<h2>Strong Roblox Lua Obfuscator</h2>
-<textarea id="input" placeholder="Paste your Lua code here..."></textarea>
+<h2>Strong Lua Obfuscator</h2>
+<textarea id="input" placeholder="Paste Lua code here..."></textarea>
 <button onclick="obfuscate()">Obfuscate</button>
 <button onclick="copyOutput()">Copy Output</button>
 <div id="output"></div>
 
 <script>
-function randomVar(len = 6) {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let s = '';
-    for(let i=0;i<len;i++) s += chars[Math.floor(Math.random()*chars.length)];
+function randomVar(len=6){
+    const chars='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let s=''; for(let i=0;i<len;i++) s+=chars[Math.floor(Math.random()*chars.length)];
     return s;
 }
 
-function encodeString(str) {
+function escapeString(str){
     return str.split('').map(c=>'\\' + c.charCodeAt(0).toString().padStart(3,'0')).join('');
 }
 
-function obfuscate() {
+function obfuscate(){
     const code = document.getElementById('input').value;
     if(!code) return alert("Paste Lua code first!");
-
-    // Split code lines
-    let lines = code.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>0);
-
-    // Random vars
-    let varName = randomVar();
-    let arrName = randomVar();
-
-    // Encode strings
-    let encodedLines = lines.map(l => {
-        return l.replace(/"(.*?)"/g, (m,p) => `"${encodeString(p)}"`);
+    
+    // Random vars for junk + final string
+    const arrVar = randomVar(), finalVar = randomVar();
+    
+    // Split lines and escape strings
+    const lines = code.split(/\r?\n/).filter(l=>l.trim().length>0);
+    const encoded = lines.map(l => l.replace(/"(.*?)"/g,(m,p)=>`"${escapeString(p)}"`));
+    
+    // Build array of lines
+    let arrayLines = `${arrVar}={};\n`;
+    encoded.forEach((line,i)=>{
+        arrayLines += `${arrVar}[${i+1}]="${line}";\n`;
     });
-
-    // Add junk arithmetic and table encoding
-    let junk1 = `${arrName}={};for i=1,${encodedLines.length} do ${arrName}[i]=${encodedLines[i-1]}; end`;
-    let junk2 = `local ${varName}="";for i=1,#${arrName} do ${varName}=${varName}..${arrName}[i].."" end; loadstring(${varName})()`;
-
-    document.getElementById('output').textContent = `--[[ Strong Obfuscated Lua ]] \n${junk1}\n${junk2}`;
+    
+    // Build concatenation and loadstring
+    let concatLines = `local ${finalVar}="";\nfor i=1,#${arrVar} do ${finalVar}=${finalVar}..${arrVar}[i]..";" end\nloadstring(${finalVar})()`;
+    
+    document.getElementById('output').textContent = `--[[ Strong Obfuscated Lua ]] \n${arrayLines}\n${concatLines}`;
 }
 
-function copyOutput() {
-    const out = document.getElementById('output');
-    navigator.clipboard.writeText(out.textContent).then(()=>alert('Copied!'));
+function copyOutput(){
+    navigator.clipboard.writeText(document.getElementById('output').textContent).then(()=>alert("Copied!"));
 }
 </script>
 </body>
