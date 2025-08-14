@@ -16,7 +16,7 @@ button { padding: 10px; }
 <textarea id="output" placeholder="Obfuscated Lua will appear here" readonly></textarea>
 
 <script>
-// Convert string to hex
+// Convert Lua string to hex
 function toHex(s){
   let out=[];
   for(let i=0;i<s.length;i++){
@@ -32,31 +32,17 @@ function chunk(str,size){
   return arr;
 }
 
-// Generate obfuscated loader
+// Generate obfuscated Lua loader
 function generateLoader(hex){
-  // Random variable names (a-f style reversed)
   const f='f',e='e',d='d',c='c',b='b',a='a';
-  
-  // Dummy loop for obfuscation
   const dummy='do local x=7 for i=1,1 do end end';
-  
-  // Split hex into chunks
   const chunks=chunk(hex,64);
   const chunkTable='local '+c+'={' + chunks.map(s=>'"'+s+'"').join(',') + '}';
-  
-  // Hex-to-byte function
   const hexFunc='local '+e+'=function('+d+')return('+d..':gsub("%x%x",function('+b+')return string.char(tonumber('+b+',16))end))end';
-  
-  // Dummy variables
   const dummyVars='local '+a+'=1 local '+b+'=0 for '+d+'=1,#'+c+' do local '+f+'='+c+'['+d+'] ; '+a+'=('+a+'+0)%65521 ; '+b+'=('+b+'+'+a+')%65521 end';
-  
-  // Rejoin chunks
   const rejoin='local '+d+'="" for '+f+'=1,#'+c+' do '+d+'='+d+'..'+c+'['+f+'] end';
-  
-  // Execute
   const exec='local fn=('+e+')('+d+') local ok,err=pcall(function() return loadstring and loadstring(fn) or load(fn) end) if not ok then game.Players.LocalPlayer:Kick("101") end return err()';
-  
-  // Combine everything
+
   return '-- Strong Obfuscated Lua Loader\nlocal '+f+'=670 '+dummy+'\n'+chunkTable+'\n'+hexFunc+'\n'+dummyVars+'\n'+rejoin+'\n'+exec;
 }
 
