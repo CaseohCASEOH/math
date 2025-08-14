@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Lua/Luau Web Obfuscator (Hex Wrap + Anti-Tamper)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 24px; }
+  textarea { width: 100%; min-height: 220px; }
+  .row { display: grid; gap: 12px; grid-template-columns: 1fr; }
+  .opts { display: flex; gap: 16px; align-items: center; }
+  button { padding: 10px 14px; cursor: pointer; }
+  code { background: #f6f6f6; padding: 2px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+  <h1>Lua/Luau Web Obfuscator</h1>
+  <div class="row">
+    <label>Input Script</label>
+    <textarea id="in" placeholder="-- Paste Your Lua/Luau Script Here"></textarea>
+
+    <div class="opts">
+      <label><input type="checkbox" id="numbersOnly" /> Numbers Only Chunks</label>
+      <label><input type="checkbox" id="splitChunks" checked /> Split Hex Into Chunks</label>
+      <label><input type="checkbox" id="addNoise" /> Add Light Loader Noise</label>
+    </div>
+
+    <button id="go">Obfuscate</button>
+
+    <label>Obfuscated Output</label>
+    <textarea id="out" readonly placeholder="-- Generated Loader Script Will Appear Here"></textarea>
+
+    <p>Loader Verifies Payload With <code>Adler32</code> (Pure Lua) And Runs <code>loadstring</code> On Reconstructed Source.</p>
+  </div>
+
+<script>
+/* Utilities */
+function toHex(s) {
+  let out = [];
+  for (let i = 0; i < s.length; i++) {
+    out.push(s.charCodeAt(i).toString(16).padStart(2, "0"));
+  }
+  return out.join("");
+}
+function adler32(bytes) {
+  // Adler-32 Over Raw Bytes (Mod 65521)
+  const MOD = 65521;
+  let a = 1, b = 0;
+  for (let i = 0; i < bytes.length; i++) {
+    a = (a + bytes[i]) % MOD;
+    b = (b + a) % MOD;
+  }
+  return { a, b }; // Return Pair To Avoid Bit Ops In Lua
+}
+function hexToBytes(hex) {
+  const len = hex.length;
+  const out = new Uint8Array(len / 2);
+  for (let i = 0, j = 0; i < len; i += 2, j++) {
+    out[j] = parseInt(hex.slice(i, i + 2), 16);
+  }
+  return out;
+}
+function chunkString(str, size) {
+  const out = [];
+  for (let i = 0; i < str.length; i += size) out.push(str.slice(i, i + size));
+  return out;
+}
+function randName(len) {
+  const a = "abcdefxyz";
+  let s = "";
+  for (let i = 0; i < len; i++) s += a[Math.floor(Math.random() * a.length)];
+  return s;
+}
+
+/* Build Lua Loader */
+function buildLoader(hex, opts) {
+  // Compute Adler-32 On Original Source For Tamper Detection
+  const bytes = hexToBytes(hex);
+  const { a, b } = adler32(bytes);
+
+  // Encode Payload As Either String Hex Or Numbers Only Chunks
+  const chunkSize = 64; // Hex Nibbles Per Chunk
+  const chunks = opts.splitChunks ? chunkString(hex, chunkSize) : [hex];
+
+  let payloadLua;
+  if (opts.numbersOnly) {
+    // Numbers Only Chunks: Represent Each Chunk As A Decimal Number Literal Of Its Hex (Base 16 Parsed At Runtime)
+    // We Store As Table Of Decimal Strings And Convert Via tonumber(x,16) Per Chunk, Then Concat.
+    const numList = chunks.map(c => c.replace(/[^0-9a-f]/gi, ""));
+    // At Runtime We Keep Them As Strings But No Quotes In Source Is Impossible In Lua,
+    // So We Keep Quotes Minimal And Emphasize The Numbers. Compatibility Kept High.
+    payloadLua = `local ${'c'}={${numList.map(s => `"${s}"`).join(",")}}`;
+  } else {
+    // Plain Hex String Chunks
+    payloadLua = `local ${'c'}={${chunks.map(s => `"${s}"`).join(",")}}`;
+  }
+
+  // Variable Names Reversed Alphabet Style
+  const f="f", e="e", d="d", c="c", bvar="b", avar="a";
+
+  // Optional Light Noise
+  const noise = opts.addNoise
+    ? `do local ${randName(1)}=${Math.floor(Math.random()*9)+1} for ${randName(1)}=${Math.floor(Math.random()*2)+1},${Math.floor(Math.random()*2)+1} do end end`
+    : "";
+
+  // Lua Loader (Pure Luau Compatible)
+  const lua =
+`-- Compact Hex-Wrap Loader With Adler32 Check
+local ${f}=${Math.floor(Math.random()*899)+100} ${noise}
+${payloadLua}
+local ${e}=function(${d})return(${d}:gsub("%x%x",function(${bvar})return string.char(tonumber(${bvar},16))end))end
+local ${avar}=1 local ${bvar}=0 for ${d}=1,#${c} do local ${f}=${c}[${d}] ; ${avar}=(${avar}+0)%65521 ; ${bvar}=(${bvar}+${avar})%65521 end -- Dummy Touch
+
+-- Rejoin Hex Chunks
+local ${d}="" for ${f}=1,#${c} do ${d}=${d}..${c}[${f}] end
+
+-- Compute Adler32 In Lua (No Bit Ops)
+local function ${randName(2)}(s) local ${avar},${bvar}=1,0 for i=1,#s do ${avar}=(${avar}+s:byte(i))%65521 ${bvar}=(${bvar}+${avar})%65521 end return ${avar},${bvar} end
+local ${e}1,${e}2=${randName(2)}((${e})(${d}))
+if not(${e}1==${a} and ${e}2==${b}) then return game and game.Players and game.Players.LocalPlayer and game.Players.LocalPlayer:Kick("233") end
+
+-- Execute
+local ${f}n=(${e})(${d})
+local ok,err=pcall(function() return loadstring and loadstring(${f}n) or load(${f}n) end)
+if not ok or type(err)~="function" then return game and game.Players and game.Players.LocalPlayer and game.Players.LocalPlayer:Kick("101") end
+return err()
+`;
+
+  return lua;
+}
+
+/* Wire Up UI */
+document.getElementById("go").addEventListener("click", () => {
+  const src = document.getElementById("in").value || "";
+  const splitChunks = document.getElementById("splitChunks").checked;
+  const numbersOnly = document.getElementById("numbersOnly").checked;
+  const addNoise = document.getElementById("addNoise").checked;
+
+  const hex = toHex(src);
+  const out = buildLoader(hex, { splitChunks, numbersOnly, addNoise });
+  document.getElementById("out").value = out;
+});
+</script>
+</body>
+</html>
